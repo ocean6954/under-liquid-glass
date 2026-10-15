@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Measured on iOS 26: in portrait, the bar-behind rendering and every
+     number below are identical with and without viewport-fit=cover. What it
+     changes is landscape, where without it Safari insets the page away from
+     the camera housing. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>under-liquid-glass diagnostics</title>
+<style>
+/* Self-contained copy of the library's gate and structure, so this page can
+ * be deployed alone to check what a specific device actually does. */
+:root {
+  --ulg-edge-space: 0px;
+  --ulg-viewport-height: 100vh;
+  --gate-media: "NO";
+  --gate-supports: "NO";
+}
+@supports (height: 100dvh) { :root { --ulg-viewport-height: 100dvh; } }
+@media (hover: none) and (pointer: coarse) { :root { --gate-media: "YES"; } }
+@supports (-webkit-touch-callout: none) { :root { --gate-supports: "YES"; } }
+@media (hover: none) and (pointer: coarse) {
+  @supports (-webkit-touch-callout: none) {
+    :root { --ulg-edge-space: 160px; }
+    html, body { overflow: hidden; }
+    html[data-ulg-unlocked] { --ulg-edge-space: 0px; }
+    html[data-ulg-unlocked], html[data-ulg-unlocked] body { overflow-y: visible; }
+    [data-ulg-scroller] {
+      height: calc(var(--ulg-viewport-height) + var(--ulg-edge-space) * 2);
+      overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain;
+    }
+    html[data-ulg-unlocked] [data-ulg-scroller] { height: auto; overflow-y: visible; }
+  }
+  @supports (-webkit-touch-callout: none) and (height: 100svh) {
+    :root { --ulg-viewport-height: 100svh; }
+  }
+}
+* { box-sizing: border-box; margin: 0; }
+body { font-family: -apple-system, sans-serif; background: #fff; }
+[data-ulg-surface] { position: relative; padding-block: var(--ulg-edge-space); }
+/* Bands: if you can see stripes behind the bars, real content reaches them. */
+[data-ulg-surface]::before, [data-ulg-surface]::after {
+  content: ""; position: absolute; left: 0; right: 0; height: var(--ulg-edge-space);
+}
+[data-ulg-surface]::before { top: 0; background: repeating-linear-gradient(45deg, #0af, #0af 12px, #06f 12px, #06f 24px); }
+[data-ulg-surface]::after { bottom: 0; background: repeating-linear-gradient(45deg, #0c6, #0c6 12px, #093 12px, #093 24px); }
+.view { min-height: var(--ulg-viewport-height); padding: 12px; }
+h1 { font-size: 15px; margin-bottom: 8px; }
+p { font-size: 12px; line-height: 1.6; margin-bottom: 10px; }
+pre { font: 11px/1.55 ui-monospace, monospace; white-space: pre-wrap; word-break: break-all;
+      background: #f4f4f4; border: 1px solid #999; padding: 8px; }
+button { font-size: 14px; padding: 8px 14px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="probe-lvh" style="position:absolute;top:-9999px;width:1px;height:100lvh"></div>
+<div id="probe-svh" style="position:absolute;top:-9999px;width:1px;height:100svh"></div>
+<div id="probe-sat" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-top)"></div>
+<div id="probe-sab" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-bottom)"></div>
+<div id="probe-sal" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-left)"></div>
+<div id="probe-sar" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-right)"></div>
+<div data-ulg-scroller>
+  <div data-ulg-surface>
+    <div class="view">
+      <h1>under-liquid-glass diagnostics</h1>
+      <p>
+        Look at the areas behind the top and bottom bars.<br>
+        Blue / green stripes → real content reaches behind the bars.<br>
+        Solid white or gray → nothing reaches them (check the readings below).
+      </p>
+      <pre id="out">measuring…</pre>
+      <button type="button" id="again">measure again</button>
+    </div>
+  </div>
+</div>
+<script>
+var root = document.documentElement;
+
+function readVariable(name) {
+  return getComputedStyle(root).getPropertyValue(name).trim();
+}
+
+function probeHeight(id) {
+  var element = document.getElementById(id);
+  return element ? Math.round(element.getBoundingClientRect().height * 10) / 10 : NaN;
+}
+
+function measure() {
+  var edge = parseFloat(readVariable('--ulg-edge-space')) || 0;
+  var maxScroll = Math.max(0, root.scrollHeight - root.clientHeight);
+  var target = Math.min(edge, maxScroll / 2);
+  if (target > 0) window.scrollTo(0, target);
+  var after = Math.round(window.scrollY * 10) / 10;
+  var lvh = probeHeight('probe-lvh');
+  var svh = probeHeight('probe-svh');
+  var visualViewportInfo = window.visualViewport;
+
+  var lines = [
+    'UA                : ' + navigator.userAgent,
+    '',
+    '--ulg-edge-space  : ' + readVariable('--ulg-edge-space'),
+    'gate media/webkit : ' + readVariable('--gate-media') + ' / ' + readVariable('--gate-supports'),
+    '',
+    '100lvh            : ' + lvh,
+    '100svh            : ' + svh,
+    'lvh - svh         : ' + Math.round((lvh - svh) * 10) / 10 +
+      '  <- bar overlap; 0 means nothing can ever show behind the bars',
+    '',
+    'clientHeight      : ' + root.clientHeight +
+      '  <- the document is laid out in the small viewport, so this should equal 100svh',
+    '',
+    'safe-area t/b     : ' + probeHeight('probe-sat') + ' / ' + probeHeight('probe-sab'),
+    'safe-area l/r     : ' + probeHeight('probe-sal') + ' / ' + probeHeight('probe-sar') +
+      '  <- non-zero in landscape; use these to keep content off the camera housing',
+    'screen.height-lvh : ' + Math.round((screen.height - lvh) * 100) / 100,
+    'address bar       : ' + (screen.height - lvh > 40 ? 'BOTTOM' : 'TOP') +
+      '  <- ~105 means bottom, ~0 means top. Nothing reports how much sits above',
+    '                    the layout viewport, and the answer differs per layout',
+    '                    (~60px with the bar at the bottom, ~108px with it at the top).',
+    '',
+    'devicePixelRatio  : ' + window.devicePixelRatio + '  <- non-integer suggests page zoom',
+    'innerHeight       : ' + window.innerHeight,
+    'screen.height     : ' + screen.height,
+    'root.scrollHeight : ' + root.scrollHeight,
+    'visualViewport    : h=' + (visualViewportInfo ? Math.round(visualViewportInfo.height) : '-') +
+      ' scale=' + (visualViewportInfo ? visualViewportInfo.scale : '-'),
+    '',
+    'maxScroll         : ' + maxScroll,
+    'pin target        : ' + target,
+    'scrollY after pin : ' + after,
+    'pinned            : ' + (target > 0 && Math.abs(after - target) <= 1 ? 'YES' : 'NO'),
+    'unlocked fallback : ' + root.hasAttribute('data-ulg-unlocked'),
+  ];
+  document.getElementById('out').textContent = lines.join('\n');
+}
+
+measure();
+setTimeout(measure, 600);
+window.addEventListener('resize', function () { setTimeout(measure, 100); });
+document.getElementById('again').addEventListener('click', measure);
+</script>
+</body>
+</html>

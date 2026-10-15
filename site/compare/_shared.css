@@ -1,0 +1,61 @@
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #fff;
+}
+
+/* A hard-edged pattern, so wherever the page stops being painted the cut is
+   unmistakable in a screenshot. A photo or a gradient would hide it. */
+.pattern {
+  background-color: #0d8b80;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0 26px,
+    rgba(255, 255, 255, 0) 26px 52px
+  );
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  max-width: 15ch;
+}
+
+.note {
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 24ch;
+  opacity: 0.85;
+}
+
+.readout {
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  background: rgba(10, 25, 24, 0.55);
+  border-radius: 10px;
+  padding: 10px 14px;
+}

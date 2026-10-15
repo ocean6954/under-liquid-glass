@@ -1,0 +1,233 @@
+/* under-liquid-glass
+ *
+ * The CSS is the single source of truth for whether the mechanism is active:
+ * `--ulg-edge-space` is non-zero only inside the environment gate below.
+ * JavaScript reads it back via getComputedStyle and never duplicates the
+ * gating logic — keeping two copies of the condition is how you end up with
+ * a document stuck mid-scroll while behaving like a normal page.
+ *
+ * `--ulg-edge-space-config` is the user-facing input (set by the JS option
+ * or by your own CSS); it only takes effect where the gate matches.
+ */
+
+:root {
+  --ulg-edge-space: 0px;
+  /* Height actually available for content. Defaults to dvh so environments
+   * without the pinned document keep following the browser bars. */
+  --ulg-viewport-height: 100vh;
+  /* The whole visible window, bar areas included — what an element anchored
+   * to the content edge has to be to reach the bottom of the screen. Sizing
+   * such an element to --ulg-viewport-height instead leaves it one bar
+   * overlap short, and the next section starts on top of the backdrop layer. */
+  --ulg-visible-height: 100vh;
+  /* The backdrop layer's height, named once because the negative margin has
+   * to repeat it and two copies of a calc only ever get half-updated. */
+  --ulg-backdrop-height: calc(var(--ulg-viewport-height) + var(--ulg-edge-space) * 2);
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --ulg-viewport-height: 100dvh;
+    --ulg-visible-height: 100dvh;
+  }
+}
+
+/* Environment gate: touch devices (hover: none / pointer: coarse) running
+ * WebKit (-webkit-touch-callout). This is iOS Safari and iOS WebViews.
+ * Android Chrome must stay out: its bars are opaque, and locking the
+ * document there would only sacrifice the auto-hiding address bar. */
+@media (hover: none) and (pointer: coarse) {
+  @supports (-webkit-touch-callout: none) {
+    :root {
+      --ulg-edge-space: var(--ulg-edge-space-config, 140px);
+    }
+
+    /* The document itself must not be scrollable by touch — but scripts can
+     * still call window.scrollTo, which is what keeps the mid-scroll pin. */
+    html,
+    body {
+      overflow: hidden;
+    }
+
+    /* The document has to be exactly as tall and as wide as the scroller.
+     * The UA margin on body (8px) makes it taller, which shifts the pinned
+     * position, and narrower, which leaves the backdrop 8px short of the
+     * screen's left and right edges — behind the bars as well. Scoped to the
+     * pinned state rather than undone under [data-ulg-unlocked], so folding
+     * back hands the page its own margin instead of overriding it. */
+    html:not([data-ulg-unlocked]) body {
+      margin: 0;
+    }
+
+    /* Fallback: when scripted scrolling turns out not to work, the runtime
+     * sets this attribute and the whole mechanism folds back into a normal
+     * page (no edge space, document scrolls normally). */
+    html[data-ulg-unlocked] {
+      --ulg-edge-space: 0px;
+    }
+
+    html[data-ulg-unlocked],
+    html[data-ulg-unlocked] body {
+      overflow-y: visible;
+    }
+
+    /* The inner scroller receives all user scrolling. Its fixed height
+     * makes the document exactly 2 * edge-space taller than the viewport,
+     * so the document's own scroll range equals the edge space. */
+    [data-ulg-scroller] {
+      height: calc(var(--ulg-viewport-height) + var(--ulg-edge-space) * 2);
+      overflow-y: auto;
+      overflow-x: hidden;
+      /* Reaching the scroller's edge must not chain into the document,
+       * or the pinned position gets dragged off. Safari 16+. */
+      overscroll-behavior-y: contain;
+    }
+
+    html[data-ulg-unlocked] [data-ulg-scroller] {
+      height: auto;
+      overflow-y: visible;
+    }
+  }
+
+  /* With the document pinned the bars never collapse, so the visible area
+   * is always the small viewport. Everywhere else this stays dvh. */
+  @supports (-webkit-touch-callout: none) and (height: 100svh) {
+    :root {
+      --ulg-viewport-height: 100svh;
+    }
+  }
+
+  /* With the document pinned, what you can see is the large viewport: the
+   * small viewport plus the areas the bars cover. */
+  @supports (-webkit-touch-callout: none) and (height: 100lvh) {
+    :root {
+      --ulg-visible-height: 100lvh;
+    }
+  }
+
+  /* Folding back means the bars collapse again, so the viewport variable has
+   * to return to dvh as well. Restoring the geometry but leaving a stale svh
+   * height behind is the same class of bug as resetting `position` without
+   * `height` on the overlay. */
+  @supports (-webkit-touch-callout: none) and (height: 100dvh) {
+    html[data-ulg-unlocked] {
+      --ulg-viewport-height: 100dvh;
+      --ulg-visible-height: 100dvh;
+    }
+  }
+}
+
+/* The surface owns the edge space: its padding pushes content down so the top
+ * of your page lines up with the top of the visible area rather than starting
+ * underneath a bar.
+ *
+ * Do not paint a background here. It reaches the bars like anything else in
+ * the document, but position: relative puts this element in the same painting
+ * step as [data-ulg-backdrop] and later in tree order — so a background here
+ * covers the backdrop entirely. The backdrop is the one place a page-wide
+ * background belongs; this element owns the offset, not the paint. */
+[data-ulg-surface] {
+  position: relative;
+  padding-block: var(--ulg-edge-space);
+}
+
+/* The first and last children reach into the edge bands.
+ *
+ * Without this the surface's padding pushes every background down with the
+ * content, so at the top of the page the bars have no section behind them —
+ * the one place the effect matters most. The negative margin pulls the box
+ * up into the band; the transparent border puts the content back where it
+ * was. A border rather than padding, because the element's own padding
+ * belongs to the page and this rule must not overwrite it: backgrounds paint
+ * under a border (background-clip is border-box by default), so the box
+ * grows into the band while the content does not move.
+ *
+ * background-origin has to follow. Its default is padding-box, so a
+ * background-image would still be sized and placed against the box without
+ * the band — a no-repeat cover image leaves the band empty (verified in
+ * Chrome). Colours and gradients do not care; images do.
+ *
+ * Outside the gate --ulg-edge-space is 0px and both declarations are inert,
+ * so nothing has to be undone when the mechanism folds. */
+[data-ulg-surface] > :first-child {
+  margin-block-start: calc(-1 * var(--ulg-edge-space));
+  border-block-start: var(--ulg-edge-space) solid transparent;
+  background-origin: border-box;
+}
+
+[data-ulg-surface] > :last-child {
+  margin-block-end: calc(-1 * var(--ulg-edge-space));
+  border-block-end: var(--ulg-edge-space) solid transparent;
+  background-origin: border-box;
+}
+
+/* Standing full-bleed background.
+ *
+ * Put it inside [data-ulg-scroller], as a sibling BEFORE [data-ulg-surface].
+ * It sticks to the scrollport rather than the viewport, so it covers the
+ * edge bands as well and reaches behind the bars, and it moves by
+ * compositing alone. The negative margin keeps it out of the flow.
+ *
+ * Why not size it to the visible window: how much of the document the status
+ * bar covers cannot be measured (see the README), so a layer sized to the
+ * exact visible area needs a constant nobody can derive. The edge space is
+ * already larger than any bar, so covering viewport + 2 * edge space turns that
+ * unknowable number into a margin — too small is impossible, too large only
+ * crops your artwork.
+ *
+ * Painting a `cover` image or video on a child of this element is the
+ * intended use; the box is taller than the visible area, so expect the crop
+ * that comes with it. */
+[data-ulg-backdrop] {
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  height: var(--ulg-backdrop-height);
+  margin-bottom: calc(-1 * var(--ulg-backdrop-height));
+}
+
+/* Full-screen overlay: a layer that covers the screen on top of everything,
+ * for a modal or a transition.
+ *
+ * position: fixed is never composited behind the bars, so this is sticky
+ * against the scrollport — the same trick as the backdrop layer, in front
+ * instead of behind. Being sticky rather than absolute is what lets it cover
+ * the screen at any scroll position; anchored to the surface it could only
+ * work at the very top.
+ *
+ * Place it as a direct child of the scroller, BEFORE the surface, next to
+ * the backdrop layer — a sticky element never moves ahead of its own place in
+ * the flow, so after the surface it would sit at the bottom of the page and
+ * never stick into view. z-index is what puts it in front. Inside the surface
+ * it is confined to the surface's content box and cannot reach the top band.
+ *
+ * To lock scrolling while it shows, do NOT set overflow: hidden on the
+ * scroller: that stops the scroller being a scroll container and the sticky
+ * position collapses. Put `touch-action: none` on the overlay instead —
+ * every touch lands on it anyway. */
+[data-ulg-overlay] {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  @supports (-webkit-touch-callout: none) {
+    [data-ulg-overlay] {
+      position: sticky;
+      inset: 0 0 auto 0;
+      height: var(--ulg-backdrop-height);
+      margin-bottom: calc(-1 * var(--ulg-backdrop-height));
+    }
+
+    /* When the mechanism folds, restore every property changed above —
+     * resetting only `position` would leave a stale height and a negative
+     * margin behind. */
+    html[data-ulg-unlocked] [data-ulg-overlay] {
+      position: fixed;
+      inset: 0;
+      height: auto;
+      margin-bottom: 0;
+    }
+  }
+}

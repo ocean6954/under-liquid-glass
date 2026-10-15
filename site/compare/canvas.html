@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>body に背景を置いた場合</title>
+<link rel="stylesheet" href="./_shared.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+body { display: flex; }
+.screen { flex: 1; }
+</style>
+</head>
+<!-- The pattern is on <body>. With no background on <html> it propagates to
+     the canvas, so it paints the whole screen, bars included. -->
+<body class="pattern">
+<div class="screen">
+<p class="label">body に背景</p>
+<h1>帯まで塗られる</h1>
+<p class="note">body の背景はキャンバスに伝播します。ページ全体で背景が1枚なら、これで足ります。</p>
+</div>
+</body>
+</html>

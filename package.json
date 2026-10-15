@@ -1,0 +1,64 @@
+{
+  "name": "under-liquid-glass",
+  "version": "0.1.0",
+  "description": "Draw your page behind Safari's Liquid Glass bars — edge-to-edge web pages on iOS",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ocean6954/under-liquid-glass.git"
+  },
+  "homepage": "https://github.com/ocean6954/under-liquid-glass#readme",
+  "bugs": {
+    "url": "https://github.com/ocean6954/under-liquid-glass/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./debug": {
+      "types": "./dist/debug.d.ts",
+      "import": "./dist/debug.js",
+      "require": "./dist/debug.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "diag.html"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/debug.ts --format esm,cjs --dts --clean && cp src/style.css dist/style.css",
+    "site": "node scripts/build-site.mjs && node scripts/check-pages.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": [
+    "liquid-glass",
+    "safari",
+    "ios",
+    "edge-to-edge",
+    "full-bleed",
+    "scroll-runway",
+    "toolbar",
+    "address-bar",
+    "viewport",
+    "svh"
+  ],
+  "author": "ocean6954",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  }
+}

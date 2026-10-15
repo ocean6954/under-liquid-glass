@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>viewport-fit=cover</title>
+<link rel="stylesheet" href="./_shared.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+/* The pattern lives on an inner element. On <body> it would propagate to the
+   canvas and paint behind the bars too, which is not what a page whose
+   background comes from a wrapper or a section looks like. */
+.sheet { height: 100%; display: flex; }
+.screen { flex: 1; }
+/* Probes: their height is the inset itself, so we can print the real value. */
+.probe { position: absolute; left: -9999px; width: 1px; }
+.probe-top { height: env(safe-area-inset-top); }
+.probe-bottom { height: env(safe-area-inset-bottom); }
+</style>
+</head>
+<body>
+<div class="sheet pattern">
+<div class="probe probe-top"></div>
+<div class="probe probe-bottom"></div>
+<div class="screen">
+<p class="label">viewport-fit=cover</p>
+<h1>バーの裏は変わらない</h1>
+<p class="note">効く相手はノッチやホームインジケータ。ブラウザのバーではありません。</p>
+<p class="readout" id="readout">測定中…</p>
+</div>
+<script>
+const px = (selector) => Math.round(document.querySelector(selector).getBoundingClientRect().height)
+document.getElementById('readout').textContent =
+  `safe-area-inset-top: ${px('.probe-top')}px\nsafe-area-inset-bottom: ${px('.probe-bottom')}px`
+document.getElementById('readout').style.whiteSpace = 'pre'
+</script>
+</div>
+</body>
+</html>

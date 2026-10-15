@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>構造 — under-liquid-glass</title>
+<meta name="description" content="under-liquid-glass が扱う4つの要素と、それぞれが画面のどこに来るか。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500&family=Zen+Kaku+Gothic+New:wght@400;500&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #080c1a;
+  --haze: #141b31;
+  --line: rgba(238, 241, 250, 0.14);
+  --text: #eef1fa;
+  --muted: #8b95b4;
+  --display: "Bricolage Grotesque", "Zen Kaku Gothic New", ui-sans-serif, system-ui, sans-serif;
+  --body: "Instrument Sans", "Zen Kaku Gothic New", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* One colour per role, used for the swatch, the outline and the label.
+     Nothing else on the page uses them. */
+  --scroller: #f8fafc;
+  --surface: #f59e0b;
+  --screen: #22d3ee;
+  --backdrop: #a3e635;
+  --overlay: #f43f5e;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--screen); outline-offset: 3px; border-radius: 3px; }
+
+.wrap {
+  max-width: 62rem;
+  margin-inline: auto;
+  padding: clamp(2rem, 7vh, 4rem) max(20px, env(safe-area-inset-left)) 4rem max(20px, env(safe-area-inset-right));
+}
+
+.back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  margin: 1.5rem 0 0.75rem;
+  max-width: 20ch;
+}
+
+.intro { color: var(--muted); max-width: 52ch; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+  align-items: start;
+  margin-top: clamp(2rem, 6vh, 3.5rem);
+}
+
+/* ── the drawing: five planes in 3D ──────────────────────────────── */
+
+.stage { position: sticky; top: 2rem; }
+
+.viewport {
+  perspective: 1100px;
+  perspective-origin: 50% 45%;
+  height: clamp(380px, 62vh, 500px);
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.viewport:active { cursor: grabbing; }
+
+/* The document is taller than the screen; that is the whole point, so the
+   scene box is the document and the aperture is drawn inside it. */
+.scene {
+  position: relative;
+  width: 168px;
+  height: 320px;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, -12deg)) rotateY(var(--ry, -34deg));
+  transition: transform 260ms ease;
+}
+.scene[data-dragging] { transition: none; }
+
+/* 2D: the same geometry seen head-on. The outlines nest instead of stacking
+   in depth, which is the view you want when checking which box is inside
+   which. */
+.scene[data-flat] { transform: none; }
+.scene[data-flat] .plane { --z: 0px; }
+.scene[data-flat] .aperture { transform: none; }
+
+.plane {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(var(--z));
+  transform-style: preserve-3d;
+  border: 1px solid;
+  border-radius: 3px;
+  opacity: 0.34;
+  transition: opacity 160ms ease;
+}
+.plane[data-on] { opacity: 1; }
+
+.plane b {
+  position: absolute;
+  padding: 1px 5px;
+  font: 9px/1.5 var(--mono);
+  font-weight: 600;
+  color: #020617;
+  white-space: nowrap;
+}
+.plane--backdrop b { top: -1px; left: -1px; border-radius: 3px 0 3px 0; }
+.plane--surface b { top: -1px; right: -1px; border-radius: 0 3px 0 3px; }
+.plane--overlay b { bottom: -1px; right: -1px; border-radius: 3px 0 3px 0; }
+
+/* backdrop sits furthest back and spans the whole document */
+.plane--backdrop { --z: -56px; border-color: var(--backdrop); background: rgba(163, 230, 53, 0.1); }
+.plane--backdrop b { background: var(--backdrop); }
+
+/* surface holds the content, inset by one edge space at each end */
+.plane--surface { --z: 0px; border-color: var(--surface); background: rgba(245, 158, 11, 0.08); }
+.plane--surface b { background: var(--surface); }
+
+
+.plane--overlay { --z: 88px; border-color: var(--overlay); background: rgba(244, 63, 94, 0.12); }
+.plane--overlay b { background: var(--overlay); }
+
+/* The edge bands, drawn on the surface plane so they tilt with it. */
+.band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 58px;
+  background: repeating-linear-gradient(-45deg, rgba(148,163,184,.22) 0 5px, transparent 5px 10px);
+  font: 8px/58px var(--mono);
+  text-align: center;
+  color: var(--muted);
+}
+.band--top { top: 0; }
+.band--bottom { bottom: 0; }
+
+/* The aperture: what the screen actually shows, bars included. Sits in
+   front of everything as the thing you look through. */
+.aperture {
+  position: absolute;
+  inset: 30px -16px;
+  transform: translateZ(130px);
+  border: 1px dashed rgba(238, 241, 250, 0.55);
+  border-radius: 5px;
+  pointer-events: none;
+}
+.aperture::before {
+  content: "可視ウィンドウ";
+  position: absolute;
+  top: -17px;
+  right: 0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(238, 241, 250, 0.9);
+  color: #020617;
+  font: 9px/1.5 var(--mono);
+  font-weight: 600;
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: rgba(238, 241, 250, 0.12);
+  border: 1px solid rgba(238, 241, 250, 0.3);
+  font: 8px/22px var(--mono);
+  text-align: center;
+  color: rgba(238, 241, 250, 0.75);
+}
+.bar--top { top: 0; }
+.bar--bottom { bottom: 0; }
+
+.viewmode {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.viewmode button {
+  font: 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.viewmode button[aria-pressed="true"] { color: var(--text); border-color: rgba(238,241,250,.45); }
+
+.hint {
+  margin-top: 0.6rem;
+  font: 10px/1.5 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── the list ─────────────────────────────────────────────────────── */
+
+.roles { list-style: none; padding: 0; display: grid; gap: 1px; background: var(--line); border-block: 1px solid var(--line); }
+
+.roles button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  background: var(--ink);
+  border: 0;
+  padding: 15px 4px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.roles button:hover, .roles button[aria-pressed="true"] { background: #10162a; }
+
+.swatch { width: 10px; height: 10px; border-radius: 2px; margin-top: 6px; }
+
+.roles code { font-family: var(--mono); font-size: 13px; }
+.roles p { font-size: 14px; color: var(--muted); margin-top: 3px; }
+.roles em { font-style: normal; color: var(--text); }
+
+.foot { margin-top: 2.5rem; font-size: 14px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .layout { grid-template-columns: 1fr; }
+  .stage { position: static; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./">← under-liquid-glass</a>
+  <a class="back" href="../anatomy.html" style="margin-left:14px">English</a>
+
+  <h1>4つの要素と、それぞれが来る場所</h1>
+  <p class="intro">
+    2つは必ず用意する構造で、2つは任意です。どれも画面上で指させるものなので、
+    選ぶとその要素が占める領域が図に出ます。
+  </p>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="viewport" id="viewport">
+        <div class="scene" id="scene">
+          <div class="plane plane--backdrop" id="p-backdrop"><b>backdrop</b></div>
+
+          <div class="plane plane--surface" id="p-surface">
+            <b>surface</b>
+            <div class="band band--top">はみ出し幅</div>
+            <div class="band band--bottom">はみ出し幅</div>
+          </div>
+
+          <div class="plane plane--overlay" id="p-overlay"><b>overlay</b></div>
+
+          <div class="aperture">
+            <div class="bar bar--top">ステータスバー</div>
+            <div class="bar bar--bottom">アドレスバー</div>
+          </div>
+        </div>
+      </div>
+      <div class="viewmode">
+        <button type="button" id="btn-3d" aria-pressed="true">3D</button>
+        <button type="button" id="btn-2d" aria-pressed="false">2D</button>
+      </div>
+      <p class="hint" id="hint">ドラッグで回転</p>
+    </div>
+
+    <ul class="roles" id="roles">
+      <li>
+        <button type="button" data-zone="p-surface" aria-pressed="false">
+          <span class="swatch" style="background:var(--scroller)"></span>
+          <span>
+            <code>data-ulg-scroller</code>
+            <p><em>必須の構造。</em>ユーザーのスクロールを全部受け取ります。他は全部この中に入ります。ルーターのスクロール復元や「トップへ戻る」は window ではなくここへ向けてください。</p>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button type="button" data-zone="p-surface" aria-pressed="false">
+          <span class="swatch" style="background:var(--surface)"></span>
+          <span>
+            <code>data-ulg-surface</code>
+            <p><em>必須の構造。</em>コンテンツを持ちます。はみ出し幅1つ分だけ押し下げられているので、中身がステータスバーの下から始まることはありません。</p>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button type="button" data-zone="p-backdrop" aria-pressed="false">
+          <span class="swatch" style="background:var(--backdrop)"></span>
+          <span>
+            <code>data-ulg-backdrop</code>
+            <p>コンテンツがその上をスクロールしていく、動かない背景。上下のはみ出し部分の先まで届くので、バーの裏に回ります。</p>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button type="button" data-zone="p-overlay" aria-pressed="false">
+          <span class="swatch" style="background:var(--overlay)"></span>
+          <span>
+            <code>data-ulg-overlay</code>
+            <p>その上を覆う全画面レイヤー。同じ全高を覆います。<code>position: fixed</code> ではこれはできません。</p>
+          </span>
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <p class="foot">
+    上下の帯は、画面が直接には見せないドキュメントの部分です。バーの裏に来ます。
+    <a href="../demo/">デモ</a>では、実際のページ上で4つ全部に枠を引けます。
+  </p>
+</div>
+
+<script type="module">
+const buttons = [...document.querySelectorAll('#roles button')]
+const planes = [...document.querySelectorAll('.plane')]
+
+function show(id) {
+  for (const button of buttons) {
+    button.setAttribute('aria-pressed', String(button.dataset.zone === id))
+  }
+  for (const plane of planes) {
+    plane.toggleAttribute('data-on', plane.id === id)
+  }
+}
+
+for (const button of buttons) {
+  button.addEventListener('click', () => show(button.dataset.zone))
+  button.addEventListener('mouseenter', () => show(button.dataset.zone))
+}
+
+show('p-surface')
+
+// Drag to rotate. Pointer events cover mouse and touch, and the scene keeps
+// its CSS transition except while dragging.
+const viewport = document.getElementById('viewport')
+const scene = document.getElementById('scene')
+
+let dragging = false
+let originX = 0
+let originY = 0
+let rotateX = -14
+let rotateY = -30
+
+function apply() {
+  scene.style.setProperty('--rx', `${rotateX}deg`)
+  scene.style.setProperty('--ry', `${rotateY}deg`)
+}
+
+viewport.addEventListener('pointerdown', (event) => {
+  if (flat) return
+  // Without this the drag starts a text selection, and the browser answers
+  // with a selection or translate popup.
+  event.preventDefault()
+  dragging = true
+  originX = event.clientX
+  originY = event.clientY
+  scene.setAttribute('data-dragging', '')
+  viewport.setPointerCapture(event.pointerId)
+})
+
+viewport.addEventListener('pointermove', (event) => {
+  if (!dragging) return
+  rotateY += (event.clientX - originX) * 0.4
+  rotateX -= (event.clientY - originY) * 0.4
+  rotateX = Math.max(-70, Math.min(70, rotateX))
+  originX = event.clientX
+  originY = event.clientY
+  apply()
+})
+
+for (const type of ['pointerup', 'pointercancel']) {
+  viewport.addEventListener(type, () => {
+    dragging = false
+    scene.removeAttribute('data-dragging')
+  })
+}
+
+apply()
+
+// 2D is the same scene with the depth removed, so nothing has to be drawn
+// twice and the highlighting keeps working in both.
+const buttonFlat = document.getElementById('btn-2d')
+const button3d = document.getElementById('btn-3d')
+const hint = document.getElementById('hint')
+let flat = false
+
+function renderMode() {
+  scene.toggleAttribute('data-flat', flat)
+  buttonFlat.setAttribute('aria-pressed', String(flat))
+  button3d.setAttribute('aria-pressed', String(!flat))
+  hint.hidden = flat
+  viewport.style.cursor = flat ? 'default' : ''
+}
+
+buttonFlat.addEventListener('click', () => { flat = true; renderMode() })
+button3d.addEventListener('click', () => { flat = false; renderMode() })
+renderMode()
+</script>
+</body>
+</html>

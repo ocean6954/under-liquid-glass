@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 620" width="1140" height="620" role="img"
+     aria-label="左: スクロール位置 0 では文書が上端に接し、帯はキャンバスの色で埋まる。右: edge ぶんスクロールすると padding がバーの裏に入る。 Left: at scroll 0 the document starts below the bar, the band is filled with the canvas colour, and the padding shows as blank space. Right: scrolled up by one edge, the padding lies under the bars and the content starts at the readable top.">
+  <defs>
+    <pattern id="pad" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#fdf2e2"/>
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#e0902f" stroke-width="1.6"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0d9488"/>
+    </marker>
+    <clipPath id="screenA"><rect x="90" y="140" width="230" height="372" rx="18"/></clipPath>
+    <clipPath id="screenB"><rect x="640" y="140" width="230" height="372" rx="18"/></clipPath>
+  </defs>
+
+  <rect width="1140" height="620" fill="#fbfbfd"/>
+  <g font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, -apple-system, BlinkMacSystemFont, Noto Sans JP, sans-serif" fill="#16181d">
+
+    <!-- ======== panel A: the document sits at the top edge ======== -->
+    <text x="90" y="70" font-size="15" font-weight="600">スクロール位置 0</text>
+    <text x="90" y="92" font-size="12.5" fill="#6b7280">文書が上端に接している状態</text>
+
+    <g clip-path="url(#screenA)">
+      <rect x="90" y="140" width="230" height="372" fill="#ffffff"/>
+      <rect x="90" y="176" width="230" height="60" fill="url(#pad)"/>
+      <rect x="90" y="176" width="230" height="60" fill="none" stroke="#e0902f" stroke-width="1.2"/>
+      <rect x="90" y="236" width="230" height="300" fill="#e6ebf2"/>
+    </g>
+    
+    <rect x="90" y="476" width="230" height="36" fill="#8fa0b5" fill-opacity="0.34"/>
+    <rect x="90" y="140" width="230" height="372" rx="18" fill="none" stroke="#16181d" stroke-width="2"/>
+    <rect x="92" y="142" width="226" height="32" fill="none" stroke="#b91c1c" stroke-width="1.6" stroke-dasharray="4 3"/>
+    <text x="102" y="163" font-size="11.5" fill="#b91c1c">キャンバスの色（既定は白）</text>
+
+    <!-- padding measure -->
+    <g stroke="#e0902f" stroke-width="1.6">
+      <line x1="326" y1="176" x2="342" y2="176"/>
+      <line x1="326" y1="236" x2="342" y2="236"/>
+      <line x1="334" y1="176" x2="334" y2="236"/>
+    </g>
+    <text x="352" y="200" font-size="12.5" fill="#a25b12">edge 1枚分の padding。</text>
+    <text x="352" y="216" font-size="12.5" fill="#a25b12">ここでは空白として見える</text>
+
+    <!-- ======== the move ======== -->
+    <g>
+      <line x1="430" y1="300" x2="560" y2="300" stroke="#0d9488" stroke-width="2.5" marker-end="url(#arrow)"/>
+      <text x="430" y="288" font-size="12.5" fill="#0d9488" font-weight="600">scrollTo(edge)</text>
+      <text x="430" y="322" font-size="12.5" fill="#6b7280">文書が edge 1枚分</text>
+      <text x="430" y="338" font-size="12.5" fill="#6b7280">上へ動く</text>
+    </g>
+
+    <!-- ======== panel B: pinned, same screen ======== -->
+    <text x="640" y="70" font-size="15" font-weight="600">スクロール位置 edge</text>
+    <text x="640" y="92" font-size="12.5" fill="#6b7280">どちらの端にも接していない状態</text>
+
+    <g opacity="0.32">
+      <rect x="640" y="116" width="230" height="24" fill="url(#pad)"/>
+      <rect x="640" y="512" width="230" height="24" fill="url(#pad)"/>
+    </g>
+    <g clip-path="url(#screenB)">
+      <rect x="640" y="140" width="230" height="36" fill="url(#pad)"/>
+      <rect x="640" y="116" width="230" height="60" fill="none" stroke="#e0902f" stroke-width="1.2"/>
+      <rect x="640" y="176" width="230" height="300" fill="#e6ebf2"/>
+      <rect x="640" y="476" width="230" height="36" fill="url(#pad)"/>
+      <rect x="640" y="476" width="230" height="60" fill="none" stroke="#e0902f" stroke-width="1.2"/>
+    </g>
+    <rect x="640" y="140" width="230" height="36" fill="#8fa0b5" fill-opacity="0.34"/>
+    <rect x="640" y="476" width="230" height="36" fill="#8fa0b5" fill-opacity="0.34"/>
+    <rect x="640" y="140" width="230" height="372" rx="18" fill="none" stroke="#16181d" stroke-width="2"/>
+    <text x="690" y="163" font-size="11.5">バーの裏もページ</text>
+    <text x="884" y="132" font-size="11.5" fill="#6b7280">画面の</text>
+    <text x="884" y="148" font-size="11.5" fill="#6b7280">外に出た分</text>
+
+    <!-- the content top: 60 lower in A, at the readable top in B -->
+    <line x1="90" y1="236" x2="320" y2="236" stroke="#0d9488" stroke-width="1" stroke-dasharray="5 4" opacity="0.55"/>
+    <!-- the same edge, one edge higher on the right: the guide has to slope -->
+    <line x1="320" y1="236" x2="640" y2="176" stroke="#0d9488" stroke-width="1" stroke-dasharray="5 4" opacity="0.55"/>
+    <line x1="640" y1="176" x2="870" y2="176" stroke="#0d9488" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <text x="884" y="180" font-size="11.5" fill="#0d9488">コンテンツの</text>
+    <text x="884" y="196" font-size="11.5" fill="#0d9488">開始位置</text>
+
+    <g transform="translate(90,548)">
+      <rect x="0" y="0" width="15" height="15" fill="url(#pad)" stroke="#e0902f"/>
+      <text x="23" y="12" font-size="12">padding-block: edge</text>
+      <rect x="0" y="22" width="15" height="15" fill="#e6ebf2" stroke="#c8d1dd"/>
+      <text x="23" y="34" font-size="12">コンテンツ（100svh）</text>
+      <rect x="0" y="44" width="15" height="15" fill="#8fa0b5" fill-opacity="0.34" stroke="#8fa0b5"/>
+      <text x="23" y="56" font-size="12">Safari のバー</text>
+    </g>
+  </g>
+</svg>

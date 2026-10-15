@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>画像: backdrop</title>
+<link rel="stylesheet" href="../dist/style.css">
+<link rel="stylesheet" href="./_shared.css">
+<style>
+/* image-body and image-backdrop differ only in where the ruler image is
+   painted. The numbers in the bar areas show which slice of the image is
+   behind each bar; scrolling the cards shows whether the image moves. */
+[data-ulg-backdrop] { background: #000 url(./ruler.png) center top / 100% auto repeat-y; }
+.card {
+  margin: 16px auto;
+  width: 80%;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #121821;
+  text-align: center;
+}
+.card h1 { margin: 0 auto 8px; }
+</style>
+</head>
+<body>
+<div data-ulg-scroller>
+  <div data-ulg-backdrop></div>
+  <div data-ulg-surface>
+    <section>
+      <div class="card"><h1>画像を backdrop に</h1><pre class="readout" id="readout" style="color:#fff">…</pre></div>
+      <div class="card">1</div><div class="card">2</div><div class="card">3</div><div class="card">4</div>
+      <div class="card">5</div><div class="card">6</div><div class="card">7</div><div class="card">8</div>
+      <div class="card">9</div><div class="card">10</div><div class="card">11</div><div class="card">12</div>
+    </section>
+  </div>
+</div>
+<script type="module">
+import { underLiquidGlass } from '../dist/index.js'
+const controller = underLiquidGlass({ edgeSpace: 140 })
+const readout = document.getElementById('readout')
+const update = () => {
+  readout.textContent = `window.scrollY: ${Math.round(window.scrollY)}\nscroller: ${Math.round(controller.scroller?.scrollTop ?? -1)}`
+}
+controller.scroller?.addEventListener('scroll', update, { passive: true })
+setInterval(update, 500)
+update()
+</script>
+</body>
+</html>

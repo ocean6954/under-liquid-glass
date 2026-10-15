@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>バーの裏の比較</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: #faf9f5; color: #121821; padding: 32px 24px; }
+h1 { font-size: 22px; margin-bottom: 8px; }
+p { font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 24px; }
+ol { display: grid; gap: 12px; padding-left: 20px; }
+a { font-size: 17px; color: #0d8b80; }
+small { display: block; color: #6b7684; font-size: 14px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<h1>バーの裏の比較</h1>
+<p>iPhone Safari で1枚ずつ開いて、スクリーンショットを撮ってください。どれもスクロールしない1画面です。</p>
+<ol>
+<li><a href="./plain.html">そのまま</a><small>上下が白く切れる</small></li>
+<li><a href="./canvas.html">body に背景</a><small>伝播して帯まで塗られる</small></li>
+<li><a href="./theme-color.html">theme-color</a><small>バーが単色に染まる</small></li>
+<li><a href="./viewport-fit.html">viewport-fit=cover</a><small>バーの裏は変わらない／inset の実測値つき</small></li>
+<li><a href="./ulg.html">この手法</a><small>模様がバーの裏まで続く</small></li>
+</ol>
+<h1 style="margin-top:40px">キャンバスの膜</h1>
+<p>body の背景色が、何かに覆われていてもバーに半透明で重なるかの検証。2枚ずつ同じ条件で撮って、バーが純粋な青か紫がかっているかを比べてください。</p>
+<ol>
+<li><a href="./film-off.html">この手法 / body なし</a><small>基準。バーは backdrop の青</small></li>
+<li><a href="./film-on.html">この手法 / body に赤</a><small>膜があれば紫がかる</small></li>
+<li><a href="./plain-film-off.html">普通のページ / body なし</a><small>真ん中までスクロールして撮る</small></li>
+<li><a href="./plain-film-on.html">普通のページ / body に赤</a><small>同じ位置で撮る</small></li>
+</ol>
+<h1 style="margin-top:40px">画像の置き場所</h1>
+<p>同じ目盛り画像を body と backdrop に敷いた比較。開いた直後に1枚、カードを少しスクロールして1枚、の計2枚ずつ撮ってください。</p>
+<ol>
+<li><a href="./image-body.html">画像を body に</a><small>backdrop なし</small></li>
+<li><a href="./image-backdrop.html">画像を backdrop に</a><small>基準</small></li>
+</ol>
+</body>
+</html>

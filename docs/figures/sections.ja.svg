@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 520" width="630" height="520" role="img"
+     aria-label="セクションごとに背景が変わるページ。先頭と末尾のセクションの背景だけがバーの裏の帯まで伸びている。">
+  <defs>
+    <clipPath id="ph"><rect x="90" y="80" width="230" height="372" rx="18"/></clipPath>
+  </defs>
+  <rect width="630" height="520" fill="#fbfbfd"/>
+  <g font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, -apple-system, BlinkMacSystemFont, sans-serif" fill="#16181d">
+    <text x="90" y="44" font-size="15" font-weight="600">セクションごとに背景を持たせる</text>
+
+    <g clip-path="url(#ph)">
+      <rect x="90" y="80" width="230" height="150" fill="#a8c8ea"/>
+      <rect x="90" y="230" width="230" height="112" fill="#bfded0"/>
+      <rect x="90" y="342" width="230" height="110" fill="#e7d3ee"/>
+      
+      <rect x="112" y="134" width="120" height="10" rx="3" fill="#2b3a4a" fill-opacity="0.8"/>
+      <rect x="112" y="152" width="168" height="7" rx="3" fill="#2b3a4a" fill-opacity="0.38"/>
+      <rect x="112" y="166" width="140" height="7" rx="3" fill="#2b3a4a" fill-opacity="0.38"/>
+      
+      <rect x="112" y="252" width="120" height="10" rx="3" fill="#2b3a4a" fill-opacity="0.8"/>
+      <rect x="112" y="270" width="168" height="7" rx="3" fill="#2b3a4a" fill-opacity="0.38"/>
+      <rect x="112" y="284" width="140" height="7" rx="3" fill="#2b3a4a" fill-opacity="0.38"/>
+      
+      <rect x="112" y="360" width="120" height="10" rx="3" fill="#2b3a4a" fill-opacity="0.8"/>
+      <rect x="112" y="378" width="168" height="7" rx="3" fill="#2b3a4a" fill-opacity="0.38"/>
+      <rect x="112" y="392" width="140" height="7" rx="3" fill="#2b3a4a" fill-opacity="0.38"/>
+      <rect x="90" y="80" width="230" height="36" fill="#8fa0b5" fill-opacity="0.3"/>
+      <rect x="90" y="416" width="230" height="36" fill="#8fa0b5" fill-opacity="0.3"/>
+    </g>
+    <line x1="90" y1="230" x2="320" y2="230" stroke="#ffffff" stroke-width="1.4"/>
+    <line x1="90" y1="342" x2="320" y2="342" stroke="#ffffff" stroke-width="1.4"/>
+    <rect x="90" y="80" width="230" height="372" rx="18" fill="none" stroke="#16181d" stroke-width="2"/>
+
+    <text x="106" y="104" font-size="11" fill="#a25b12">セクション1</text>
+    <text x="106" y="246" font-size="11" fill="#a25b12">セクション2</text>
+    <text x="106" y="358" font-size="11" fill="#a25b12">セクション3</text>
+
+    
+    <line x1="326" y1="98" x2="368" y2="113" stroke="#0d9488" stroke-width="1.2"/>
+    <circle cx="326" cy="98" r="3" fill="#0d9488"/>
+    <text x="380" y="118" font-size="12" fill="#0d9488">先頭セクションの背景が</text><text x="380" y="135" font-size="12" fill="#0d9488">上の帯まで伸びている</text>
+    
+    <line x1="326" y1="286.0" x2="368" y2="240" stroke="#0d9488" stroke-width="1.2"/>
+    <circle cx="326" cy="286.0" r="3" fill="#0d9488"/>
+    <text x="380" y="245" font-size="12" fill="#0d9488">セクションごとに背景が変わる</text><text x="380" y="262" font-size="12" fill="#0d9488">（ここは何もしなくてよい）</text>
+    
+    <line x1="326" y1="434" x2="368" y2="395" stroke="#0d9488" stroke-width="1.2"/>
+    <circle cx="326" cy="434" r="3" fill="#0d9488"/>
+    <text x="380" y="400" font-size="12" fill="#0d9488">末尾セクションの背景が</text><text x="380" y="417" font-size="12" fill="#0d9488">下の帯まで伸びている</text>
+  </g>
+</svg>

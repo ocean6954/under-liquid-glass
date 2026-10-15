@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>この手法</title>
+<link rel="stylesheet" href="../dist/style.css">
+<link rel="stylesheet" href="./_shared.css">
+<style>
+/* The content box is exactly the small viewport, so nothing scrolls and the
+   copy sits where it does on the other three pages. */
+.screen { height: calc(var(--ulg-viewport-height) + var(--ulg-edge-space) * 2); }
+[data-ulg-backdrop] { overflow: hidden; }
+</style>
+</head>
+<body>
+<div data-ulg-scroller>
+  <div data-ulg-backdrop class="pattern"></div>
+  <div data-ulg-surface>
+    <section class="screen">
+      <p class="label">この手法</p>
+      <h1>バーの裏まで続く</h1>
+      <p class="note">上下に余白を足し、その分だけスクロールした位置に居座らせ続けています。</p>
+    </section>
+  </div>
+</div>
+<script type="module">
+import { underLiquidGlass } from '../dist/index.js'
+underLiquidGlass({ edgeSpace: 140 })
+</script>
+</body>
+</html>

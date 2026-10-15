@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d8b80">
+<title>theme-color</title>
+<link rel="stylesheet" href="./_shared.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+/* The pattern lives on an inner element. On <body> it would propagate to the
+   canvas and paint behind the bars too, which is not what a page whose
+   background comes from a wrapper or a section looks like. */
+.sheet { height: 100%; display: flex; }
+.screen { flex: 1; }
+</style>
+</head>
+<body>
+<div class="sheet pattern">
+<div class="screen">
+<p class="label">meta theme-color</p>
+<h1>バーが単色に染まる</h1>
+<p class="note">白くはなくなりますが、置けるのは1色だけ。模様は続きません。</p>
+<p class="readout">content="#0d8b80"</p>
+</div>
+</div>
+</body>
+</html>

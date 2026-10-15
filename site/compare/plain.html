@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>そのまま</title>
+<link rel="stylesheet" href="./_shared.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+/* The pattern lives on an inner element. On <body> it would propagate to the
+   canvas and paint behind the bars too, which is not what a page whose
+   background comes from a wrapper or a section looks like. */
+.sheet { height: 100%; display: flex; }
+.screen { flex: 1; }
+</style>
+</head>
+<body>
+<div class="sheet pattern">
+<div class="screen">
+<p class="label">そのまま</p>
+<h1>上下が白く切れる</h1>
+<p class="note">バーの裏に置くものが無いので、Safari がキャンバスの背景色で埋めます。</p>
+</div>
+</div>
+</body>
+</html>

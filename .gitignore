@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Source footage for the demo; only the compressed copies in demo/ are tracked.
+assets/
+
+# npm pack output for local testing.
+*.tgz
+
+# Built site output.
+_site/
+
+# 引き継ぎメモはローカル限定（業務プロジェクトの記述を含む）。
+docs/HANDOFF.md

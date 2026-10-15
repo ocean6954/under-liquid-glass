@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>膜: body 赤</title>
+<link rel="stylesheet" href="../dist/style.css">
+<link rel="stylesheet" href="./_shared.css">
+<style>
+/* The only difference between film-off and film-on is this one line. If the
+   canvas colour is laid over the bars as a film, the bars on film-on turn
+   purple; if not, they stay the same blue on both pages. */
+body { background: #ff0000; }
+[data-ulg-backdrop] { background: #1d4ed8; }
+.screen { min-height: calc(var(--ulg-viewport-height) * 2); }
+</style>
+</head>
+<body>
+<div data-ulg-scroller>
+  <div data-ulg-backdrop></div>
+  <div data-ulg-surface>
+    <section class="screen">
+      <p class="label">canvas film</p>
+      <h1>body に赤 + backdrop に青</h1>
+      <p class="note">バーが純粋な青か、紫がかっているかを見る。</p>
+      <pre class="readout" id="readout">…</pre>
+    </section>
+  </div>
+</div>
+<script type="module">
+import { underLiquidGlass } from '../dist/index.js'
+const readout = document.getElementById('readout')
+underLiquidGlass({
+  edgeSpace: 140,
+  onStateChange: (state) => {
+    readout.textContent = `state: ${state}\nbody: ${getComputedStyle(document.body).backgroundColor}`
+  },
+})
+</script>
+</body>
+</html>

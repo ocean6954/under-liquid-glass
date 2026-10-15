@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>under-liquid-glass demo</title>
+<!-- Loads the built library: run `npm run build` before serving this page,
+     and serve over http (ESM imports do not work from file://). -->
+<link rel="stylesheet" href="../dist/style.css">
+<style>
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: #f8fafc;
+  /* Safari tints the bars from this when nothing of the page reaches them —
+     if you see this colour behind a bar, the mechanism is not working. */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The surface owns the runway padding, so what is painted here bleeds into
+   both bands and shows through the translucent bars. */
+/* No background here. The surface is position: relative, so it paints in the
+   same step as [data-ulg-backdrop] and later in tree order — anything painted
+   on it covers the backdrop completely. The fallback colour goes on the body,
+   which is the canvas and always behind both. */
+[data-ulg-surface] {
+  min-height: calc(var(--ulg-viewport-height) + var(--ulg-edge-space) * 2);
+}
+
+/* Background video. [data-ulg-backdrop] does all the positioning: the
+   stylesheet sticks it to the scrollport so it covers the runway bands,
+   which means no constant for the unmeasurable top bar overlap, and no JS. */
+[data-ulg-backdrop] {
+  overflow: hidden;
+  /* The one place a page-wide background belongs. The fallback for a video
+     that cannot autoplay goes here too, not on the canvas. */
+  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 45%, #0d9488 100%);
+}
+
+[data-ulg-backdrop] video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--fit, center);
+}
+
+[data-ulg-backdrop]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(15, 23, 42, 0.1) 0%,
+    rgba(15, 23, 42, 0.3) 55%,
+    rgba(15, 23, 42, 0.62) 100%);
+}
+
+/* Sits inside the top runway band; collapses to nothing outside the gate. */
+.runway {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: var(--ulg-edge-space);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+main { position: relative; z-index: 1; }
+section {
+  padding-block: 20px;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* The hero has to reach the bottom of the visible window, not just the small
+   viewport: [data-ulg-backdrop] is taller than both, and a short hero lets the
+   next section start on top of the footage. 100lvh is the visible window. */
+.hero {
+  min-height: var(--ulg-visible-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* The box reaches the bottom of the screen, so the copy has to clear the
+     address bar itself — 100lvh - 100svh is how much the bars cover. */
+  padding-bottom: calc(28px + (100lvh - 100svh));
+}
+.hero h1 {
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  text-shadow: 0 2px 30px rgba(15, 23, 42, 0.7);
+}
+.hero p {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 32em;
+}
+
+.badge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font: 600 11px/1.6 ui-monospace, SFMono-Regular, monospace;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+.badge[data-state="pinned"] { background: rgba(16, 185, 129, 0.32); border-color: rgba(16, 185, 129, 0.65); }
+.badge[data-state="unlocked"] { background: rgba(245, 158, 11, 0.32); border-color: rgba(245, 158, 11, 0.65); }
+/* Deploy stamp: the build tag is rewritten on every deploy, and the
+   timestamp comes from the document's own Last-Modified header — if either
+   looks stale you are looking at a cached page, not at the new code. */
+.build {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font: 11px/1.5 ui-monospace, SFMono-Regular, monospace;
+  color: #a3e635;
+}
+
+.badge[data-state="inactive"] { background: rgba(148, 163, 184, 0.26); border-color: rgba(148, 163, 184, 0.55); }
+
+.panel {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.metrics { font: 12px/1.95 ui-monospace, SFMono-Regular, monospace; }
+.metrics div { display: flex; justify-content: space-between; gap: 12px; }
+.metrics dfn { font-style: normal; color: rgba(255, 255, 255, 0.6); }
+
+.card + .card { margin-top: 12px; }
+.card h2 { font-size: 15px; margin-bottom: 6px; }
+.card p { font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.8); }
+
+.actions { display: flex; flex-direction: column; gap: 10px; }
+
+.switcher { display: flex; gap: 8px; }
+.switcher button { flex: 1; padding: 10px 6px; text-align: center; font-size: 12px; }
+.switcher button.on { background: rgba(45, 212, 191, 0.28); border-color: rgba(45, 212, 191, 0.7); }
+
+button, input[type="text"] {
+  font: inherit;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  padding: 12px 14px;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+}
+button { cursor: pointer; }
+button:active { background: rgba(255, 255, 255, 0.2); }
+input[type="text"] { width: 100%; }
+input::placeholder { color: rgba(255, 255, 255, 0.45); }
+
+.tune { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+.tune label {
+  display: flex;
+  justify-content: space-between;
+  font: 12px/1.9 ui-monospace, SFMono-Regular, monospace;
+  color: rgba(255, 255, 255, 0.6);
+}
+.tune b { color: #f8fafc; }
+.tune input { width: 100%; margin-top: 6px; accent-color: #2dd4bf; }
+
+/* Capture mode for README stills: everything but the hero and the two
+   capture buttons goes away, so nothing dates the screenshot. */
+body.clean main > section:not(.hero):not(.actions) { display: none; }
+body.clean .actions > *:not(#capture) { display: none; }
+
+.tail { padding-bottom: 36px; font-size: 13px; color: rgba(255, 255, 255, 0.75); }
+
+/* Role outlines: draws every element the library knows about, in place, so
+   the five names can be pointed at instead of imagined. */
+html[data-outline] [data-ulg-scroller],
+html[data-outline] [data-ulg-surface],
+html[data-outline] [data-ulg-backdrop],
+html[data-outline] [data-ulg-overlay] {
+  position: relative;
+  outline: 1px dashed;
+  outline-offset: -1px;
+}
+html[data-outline] [data-ulg-scroller] { outline-color: #f8fafc; }
+html[data-outline] [data-ulg-surface] { outline-color: #f59e0b; }
+html[data-outline] [data-ulg-backdrop] { outline-color: #a3e635; }
+html[data-outline] [data-ulg-overlay] { outline-color: #f43f5e; }
+
+html[data-outline] [data-ulg-scroller]::before,
+html[data-outline] [data-ulg-surface]::before,
+html[data-outline] [data-ulg-backdrop]::before,
+html[data-outline] [data-ulg-overlay]::before {
+  position: absolute;
+  top: 0;
+  z-index: 25;
+  padding: 2px 5px;
+  font: 10px/1.4 ui-monospace, monospace;
+  color: #020617;
+  white-space: nowrap;
+  pointer-events: none;
+}
+html[data-outline] [data-ulg-scroller]::before { content: "scroller"; left: 0; background: #f8fafc; }
+html[data-outline] [data-ulg-surface]::before { content: "surface"; left: 62px; background: #f59e0b; }
+html[data-outline] [data-ulg-backdrop]::before { content: "backdrop"; right: 0; left: auto; background: #a3e635; }
+html[data-outline] [data-ulg-overlay]::before { content: "overlay"; right: 0; left: auto; background: #f43f5e; }
+
+/* Debug guides: lines drawn in document coordinates, so where they land on
+   screen tells you where the pin actually put the document. */
+.guides { position: absolute; inset: 0; z-index: 30; pointer-events: none; font: 10px/1 ui-monospace, monospace; }
+.guides[hidden] { display: none; }
+.guides .line { position: absolute; left: 0; right: 0; border-top: 1px solid; }
+.guides .line span {
+  position: absolute;
+  left: var(--label-x, 6px);
+  top: 2px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  background: rgba(2, 6, 23, 0.85);
+}
+.guides .line.above span { top: auto; bottom: 2px; }
+.guides .tick { position: absolute; left: 0; width: 8px; border-top: 1px solid rgba(255, 255, 255, 0.45); }
+.guides .tick.major { width: 26px; border-top-color: rgba(255, 255, 255, 0.8); }
+.guides .tick b { position: absolute; left: 30px; top: -5px; color: rgba(255, 255, 255, 0.8); font-weight: 400; }
+
+/* Covers the viewport plus both runway bands — a fixed layer would not. */
+[data-ulg-overlay] {
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  /* The layer itself runs under the camera housing on purpose; its content
+     must not. */
+  padding: 32px max(32px, env(safe-area-inset-right)) 32px max(32px, env(safe-area-inset-left));
+  text-align: center;
+  background: linear-gradient(160deg, #db2777, #4c1d95 55%, #0d9488);
+}
+[data-ulg-overlay][hidden] { display: none; }
+[data-ulg-overlay] p { font-size: 15px; line-height: 1.6; max-width: 24em; }
+</style>
+</head>
+<body>
+
+<!-- 100lvh − 100svh is the height the bars cover. -->
+<div id="probe-lvh" style="position:absolute;top:-9999px;width:1px;height:100lvh"></div>
+<div id="probe-svh" style="position:absolute;top:-9999px;width:1px;height:100svh"></div>
+<!-- The bar areas are not one quantity: the address bar's expansion is
+     100lvh − 100svh, while the status bar / Dynamic Island is a safe-area
+     inset that neither viewport unit accounts for. -->
+<div id="probe-top" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-top)"></div>
+<div id="probe-bottom" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-bottom)"></div>
+<div id="probe-left" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-left)"></div>
+<div id="probe-right" style="position:absolute;top:-9999px;width:1px;height:env(safe-area-inset-right)"></div>
+
+<div data-ulg-scroller>
+
+  <!-- Direct child of the scroller, before the surface: inside the surface it
+       would start one runway lower and leave the top band empty until you
+       scroll — which is why the runtime warns about it. -->
+  <div data-ulg-backdrop>
+    <video src="backdrop.mp4" poster="backdrop-poster.jpg"
+           muted loop playsinline autoplay preload="auto" disablepictureinpicture></video>
+  </div>
+
+  <div data-ulg-overlay id="overlay" hidden>
+    <p>
+      This layer spans the viewport plus both runway bands, so its gradient
+      runs behind the bars with no seam.
+    </p>
+    <button type="button" id="btn-close">Close</button>
+  </div>
+
+  <div data-ulg-surface>
+
+    <main>
+      <section class="hero">
+        <h1>Your page,<br>behind the bars.</h1>
+        <p>
+          The video runs edge to edge, up under the status bar and down under the
+          address bar. It is an ordinary layer inside the document — not a fixed
+          background, which Safari would refuse to paint there.
+        </p>
+      </section>
+
+      <section>
+        <article class="panel card">
+          <h2>The document is the canvas</h2>
+          <p>Only the document canvas is composited behind the bars. A <code>position: fixed</code> layer stops at the viewport edge, however you size it.</p>
+        </article>
+        <article class="panel card">
+          <h2>The scroller owns the gesture</h2>
+          <p>The document is held mid-scroll, so all user scrolling happens in an inner element. Point "back to top" at that, never at <code>window</code>.</p>
+        </article>
+        <article class="panel card">
+          <h2>Bars stay expanded</h2>
+          <p>The address bar no longer collapses as you scroll. That is what you trade for the effect.</p>
+        </article>
+      </section>
+
+      <section class="actions">
+        <div class="switcher" id="capture">
+          <button type="button" id="btn-before">before / after</button>
+          <button type="button" id="btn-clean">hide the rest</button>
+        </div>
+        <div class="switcher" id="switcher">
+          <button type="button" data-src="backdrop" data-fit="center" class="on">Sunset 9:16</button>
+          <button type="button" data-src="backdrop-stars" data-fit="center">Stars 9:16</button>
+          <button type="button" data-src="backdrop-hills" data-fit="center 40%">Hills 16:9</button>
+        </div>
+        <button type="button" id="btn-overlay">Show full-screen overlay</button>
+        <button type="button" id="btn-top">Back to top (scrolls the scroller)</button>
+        <input type="text" placeholder="Focus me — watch scrollY while the keyboard opens">
+      </section>
+
+      <section class="diagnostics">
+        <div class="panel metrics" id="js-error" hidden
+             style="color:#fca5a5;border-color:#f43f5e;margin-bottom:10px"></div>
+        <div class="panel metrics">
+          <div><dfn>state</dfn><b class="badge" id="state">—</b></div>
+          <div><dfn>edgeSpacePx</dfn><b id="m-edge">—</b></div>
+          <div><dfn>100lvh − 100svh</dfn><b id="m-overlap">—</b></div>
+          <div><dfn>window.scrollY</dfn><b id="m-scrolly">—</b></div>
+          <div><dfn>pin target</dfn><b id="m-target">—</b></div>
+          <div><dfn>drift (scrollY − target)</dfn><b id="m-drift">—</b></div>
+          <div><dfn>target vs edgeSpace</dfn><b id="m-expect">—</b></div>
+          <div><dfn>maxScroll</dfn><b id="m-max">—</b></div>
+          <div><dfn>clientHeight vs lvh/svh</dfn><b id="m-client">—</b></div>
+          <div><dfn>safe-area top / bottom</dfn><b id="m-inset">—</b></div>
+          <div><dfn>safe-area left / right</dfn><b id="m-inset-x">—</b></div>
+          <div><dfn>screen.height − lvh</dfn><b id="m-screen">—</b></div>
+          <div><dfn>bar layout</dfn><b id="m-layout">—</b></div>
+          <div><dfn>innerHeight / vv.height</dfn><b id="m-inner">—</b></div>
+          <div class="tune">
+            <label for="edge">edgeSpace <b id="edge-value">160px</b></label>
+            <input id="edge" type="range" min="60" max="240" step="10" value="160">
+          </div>
+        </div>
+        <button type="button" id="btn-guides" style="margin-top:10px">Toggle debug guides</button>
+        <button type="button" id="btn-outline" style="margin-top:10px">Outline the roles</button>
+      </section>
+
+      <section class="tail">
+        The teal under the address bar is still this page.
+        <div><span class="build" id="build" data-build="b193133">—</span></div>
+      </section>
+    </main>
+
+    <div class="guides" id="guides" hidden></div>
+
+
+  </div>
+
+</div>
+
+<script type="module">
+import { underLiquidGlass, computePinTarget } from '../dist/index.js'
+import { attachDiagnostics } from '../dist/debug.js'
+
+// Registered before anything else: a throw during setup used to happen before
+// this listener existed, so the page just looked subtly wrong instead of
+// saying what broke.
+window.addEventListener('error', (event) => {
+  const box = document.getElementById('js-error')
+  if (!box) return
+  box.hidden = false
+  box.textContent = `JS error: ${event.message}`
+})
+
+const buildTag = document.getElementById('build')
+buildTag.textContent = `${buildTag.dataset.build} · ${document.lastModified.slice(11)}`
+
+const badge = document.getElementById('state')
+
+const controller = underLiquidGlass({
+  edgeSpace: 140,
+  onStateChange: (state) => {
+    badge.textContent = state
+    badge.dataset.state = state
+  },
+})
+
+badge.textContent = controller.state
+badge.dataset.state = controller.state
+
+const readings = {
+  edge: document.getElementById('m-edge'),
+  overlap: document.getElementById('m-overlap'),
+  scrollY: document.getElementById('m-scrolly'),
+  target: document.getElementById('m-target'),
+  drift: document.getElementById('m-drift'),
+  max: document.getElementById('m-max'),
+  expect: document.getElementById('m-expect'),
+  inset: document.getElementById('m-inset'),
+  insetX: document.getElementById('m-inset-x'),
+  screen: document.getElementById('m-screen'),
+  layout: document.getElementById('m-layout'),
+  inner: document.getElementById('m-inner'),
+  client: document.getElementById('m-client'),
+}
+
+function height(id) {
+  return document.getElementById(id).getBoundingClientRect().height
+}
+
+/* Which of Safari's two address-bar layouts is in use. Measured on iOS 26:
+ * screen.height − 100lvh is ~105 with the bar at the bottom and ~0 with it at
+ * the top. Compare against a threshold, not 0 — 100lvh resolves fractionally. */
+function isBottomBarLayout() {
+  return window.screen.height - height('probe-lvh') > 40
+}
+
+function round(value) {
+  return Math.round(value * 10) / 10
+}
+
+const backdrop = document.querySelector('[data-ulg-backdrop]')
+
+// The same numbers the runtime works from, so the guides cannot drift from
+// what actually happens.
+function measure() {
+  const root = document.documentElement
+  const lvh = height('probe-lvh')
+  const svh = height('probe-svh')
+  const maxScroll = Math.max(0, root.scrollHeight - root.clientHeight)
+  return {
+    lvh,
+    svh,
+    maxScroll,
+    clientHeight: root.clientHeight,
+    edge: controller.edgeSpacePx,
+    target: computePinTarget(controller.edgeSpacePx, maxScroll),
+    scrollY: window.scrollY,
+    surfaceHeight: root.scrollHeight,
+  }
+}
+
+function updateReadings() {
+  const numbers = measure()
+  readings.edge.textContent = `${numbers.edge}px`
+  readings.overlap.textContent = `${round(numbers.lvh - numbers.svh)}px`
+  readings.scrollY.textContent = `${round(numbers.scrollY)}px`
+  readings.target.textContent = `${round(numbers.target)}px`
+  readings.drift.textContent = `${round(numbers.scrollY - numbers.target)}px`
+  readings.max.textContent = `${round(numbers.maxScroll)}px`
+  // If these two disagree, the pin landed somewhere the CSS could not have
+  // predicted — which is exactly the reload flicker.
+  readings.expect.textContent = `${round(numbers.target)} vs ${round(numbers.edge)}`
+  readings.inset.textContent =
+    `${round(height('probe-top'))} / ${round(height('probe-bottom'))}`
+  readings.insetX.textContent =
+    `${round(height('probe-left'))} / ${round(height('probe-right'))}`
+  // Candidate side signals for telling the two address-bar layouts apart,
+  // since nothing can measure the bar area itself.
+  readings.screen.textContent =
+    `${window.screen.height} − ${numbers.lvh.toFixed(2)} = ${(window.screen.height - numbers.lvh).toFixed(2)}`
+  readings.inner.textContent =
+    `${round(window.innerHeight)} / ${round(window.visualViewport?.height ?? 0)}`
+  readings.layout.textContent =
+    isBottomBarLayout() ? 'address bar at bottom' : 'address bar at top'
+  // Tells us which viewport the document is laid out in, and therefore where
+  // the physical screen edge falls in document coordinates.
+  readings.client.textContent =
+    `${round(numbers.clientHeight)} / ${round(numbers.lvh)} / ${round(numbers.svh)}`
+  if (!guides.hidden) drawGuides(numbers)
+}
+
+const guides = document.getElementById('guides')
+
+// Everything is placed in surface coordinates. A line at y = scrollY lands
+// on the physical top edge of the screen when the pin is where it should be.
+function drawGuides(numbers) {
+  const rows = [
+    [0, '#ffffff', 'surface top (y=0)', 0],
+    [numbers.target, '#22d3ee', `pin target ${round(numbers.target)}`, 0],
+    [numbers.scrollY, '#f43f5e', `scrollY ${round(numbers.scrollY)}`, 1],
+    [numbers.edge, '#f59e0b', `content edge ${round(numbers.edge)}`, 3],
+    [numbers.scrollY + numbers.clientHeight, '#22d3ee', `+clientHeight ${round(numbers.clientHeight)}`, 0],
+    [numbers.surfaceHeight, '#ffffff', `surface bottom ${round(numbers.surfaceHeight)}`, 0],
+  ]
+
+  // Staggered so the labels of nearby lines do not cover each other.
+  const lines = rows.map(([y, color, label, slot], index) =>
+    `<div class="line${index === rows.length - 1 ? ' above' : ''}" ` +
+    `style="top:${y}px;border-color:${color};--label-x:${44 + slot * 4}px">` +
+    `<span style="color:${color}">${label}</span></div>`,
+  )
+
+  const ticks = []
+  const rulerEnd = numbers.scrollY + numbers.lvh
+  for (let y = 0; y <= rulerEnd; y += 20) {
+    const major = y % 100 === 0
+    ticks.push(`<div class="tick${major ? ' major' : ''}" style="top:${y}px">` +
+      (major ? `<b>${y}</b>` : '') + '</div>')
+  }
+
+  guides.innerHTML = ticks.join('') + lines.join('')
+}
+
+const root = document.documentElement
+const params = new URLSearchParams(location.search)
+
+let before = params.has('before')
+root.toggleAttribute('data-ulg-unlocked', before)
+
+const beforeButton = document.getElementById('btn-before')
+
+function renderBeforeLabel() {
+  beforeButton.textContent = before ? 'before (mechanism off)' : 'after (mechanism on)'
+  beforeButton.classList.toggle('on', !before)
+}
+
+renderBeforeLabel()
+
+beforeButton.addEventListener('click', () => {
+  before = !before
+  // data-ulg-unlocked is the fold the stylesheet already defines, so this is
+  // the same page a device without the mechanism would get.
+  root.toggleAttribute('data-ulg-unlocked', before)
+  renderBeforeLabel()
+  controller.refresh()
+  updateReadings()
+})
+
+const cleanButton = document.getElementById('btn-clean')
+let clean = params.has('clean')
+
+function renderClean() {
+  document.body.classList.toggle('clean', clean)
+  cleanButton.classList.toggle('on', clean)
+  cleanButton.textContent = clean ? 'show the rest' : 'hide the rest'
+}
+
+renderClean()
+
+cleanButton.addEventListener('click', () => {
+  clean = !clean
+  renderClean()
+})
+
+document.getElementById('btn-outline').addEventListener('click', (event) => {
+  const on = document.documentElement.toggleAttribute('data-outline')
+  event.currentTarget.textContent = on ? 'Hide the roles' : 'Outline the roles'
+})
+
+document.getElementById('btn-guides').addEventListener('click', () => {
+  guides.hidden = !guides.hidden
+  if (!guides.hidden) drawGuides(measure())
+})
+
+updateReadings()
+setInterval(updateReadings, 250)
+
+// Reading the resolved value back is the only gate check JS may make: where
+// the mechanism is off the document is not pinned, so the offset must go.
+const video = backdrop.querySelector('video')
+
+// Low Power Mode blocks autoplay; the poster frame stands in for it.
+video.play().catch(() => {})
+
+// Swapping footage is a src change and nothing else — the layer geometry is
+// written in lvh/svh/edgeSpace and never refers to the asset.
+document.getElementById('switcher').addEventListener('click', (event) => {
+  const button = event.target.closest('button')
+  if (!button) return
+  for (const other of event.currentTarget.children) other.classList.toggle('on', other === button)
+  video.poster = `${button.dataset.src}-poster.jpg`
+  video.src = `${button.dataset.src}.mp4`
+  video.style.setProperty('--fit', button.dataset.fit)
+  video.play().catch(() => {})
+})
+
+// --ulg-edge-space-config is the documented input: the stylesheet still
+// decides whether it applies at all, so tuning it live stays honest.
+const edgeInput = document.getElementById('edge')
+const edgeValue = document.getElementById('edge-value')
+
+edgeInput.addEventListener('input', () => {
+  document.documentElement.style.setProperty('--ulg-edge-space-config', `${edgeInput.value}px`)
+  edgeValue.textContent = `${edgeInput.value}px`
+  controller.refresh()
+  updateReadings()
+})
+
+const overlay = document.getElementById('overlay')
+
+document.getElementById('btn-overlay').addEventListener('click', () => {
+  // Sticky against the scrollport, so it covers the screen wherever you are.
+  // The lock is touch-action on the overlay itself: overflow: hidden on the
+  // scroller would stop it being a scroll container and kill the sticky.
+  overlay.hidden = false
+})
+
+document.getElementById('btn-close').addEventListener('click', () => {
+  overlay.hidden = true
+})
+
+document.getElementById('btn-top').addEventListener('click', () => {
+  // controller.scrollTo handles the coordinate change and the edge space
+  // offset, and falls back to the document where the mechanism is inactive.
+  controller.scrollTo(document.querySelector('.hero'), { behavior: 'smooth' })
+})
+
+// ?panel=1 attaches the library's own diagnostics, so the demo exercises the
+// thing implementers are told to reach for.
+if (new URLSearchParams(location.search).has('panel')) attachDiagnostics(controller, { open: true })
+
+window.ulg = controller
+</script>
+</body>
+</html>

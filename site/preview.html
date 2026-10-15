@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Preview — under-liquid-glass</title>
+<meta name="description" content="One screen, both bars, with the mechanism on and off.">
+<link rel="stylesheet" href="./dist/style.css">
+<style>
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The whole page is one screen. The height counts the transparent border the
+   stylesheet puts on the first and last child, so the content box is exactly
+   the small viewport in both states and the copy sits in the same place. */
+.screen {
+  height: calc(var(--ulg-viewport-height) + var(--ulg-edge-space) * 2);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 28px;
+  padding-inline: max(24px, env(safe-area-inset-left)) max(24px, env(safe-area-inset-right));
+}
+
+[data-ulg-backdrop] {
+  overflow: hidden;
+  /* Video frames do not reach the bands; an element background does. This fill
+     is sampled from the footage's own top and bottom edges, so the bands read
+     as a continuation of the video rather than as a tinted film. */
+  background: linear-gradient(180deg, #6897df 0%, #4a5a78 38%, #27272e 100%);
+}
+[data-ulg-backdrop] video { display: block; width: 100%; height: 100%; object-fit: cover; }
+h1 {
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  max-width: 16ch;
+  text-shadow: 0 1px 3px rgba(2, 5, 15, 0.55), 0 2px 28px rgba(2, 5, 15, 0.7);
+}
+h1 em { font-style: normal; color: #5ce1c8; }
+
+:focus-visible { outline: 2px solid #5ce1c8; outline-offset: 3px; }
+</style>
+</head>
+<body>
+<div data-ulg-scroller>
+  <div data-ulg-backdrop>
+    <video src="./demo/backdrop.mp4" poster="./demo/backdrop-poster.jpg"
+           muted loop playsinline autoplay preload="auto" disablepictureinpicture></video>
+  </div>
+  <div data-ulg-surface>
+    <section class="screen">
+      <h1>The bars show whatever is behind them. <em>Make that yours.</em></h1>
+    </section>
+  </div>
+</div>
+
+
+<script type="module">
+import { underLiquidGlass } from './dist/index.js'
+
+// The mode is the URL, not a control: nothing on this page belongs in a
+// screenshot but the background and the heading. ?before folds the mechanism
+// through the attribute the stylesheet already defines, which is the page a
+// device without it would get.
+if (new URLSearchParams(location.search).has('before')) {
+  document.documentElement.setAttribute('data-ulg-unlocked', '')
+}
+
+underLiquidGlass({ edgeSpace: 140 })
+</script>
+</body>
+</html>
